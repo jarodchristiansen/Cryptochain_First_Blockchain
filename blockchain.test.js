@@ -3,9 +3,11 @@ const Block = require('./block');
 
 
 describe('Blockchain', () => {
-  let blockchain;
+  let blockchain, newChain, originalChain;
    beforeEach(() => {
    blockchain = new Blockchain();
+   newChain = new Blockchain();
+   originalChain = blockchain.chain;
 });
 
   it('contains a `chain` Array instance', () => {
@@ -29,13 +31,61 @@ describe('Blockchain', () => {
 
       expect(Blockchain.isValidChain(blockchain.chain)).toBe(false);
   });
+    describe('replaceChain()', () => {
+        let errorMock, logMock;
+
+        beforeEach(() => {
+            errorMock = jest.fn();
+            logMock = jest.fn();
+
+            global.console.error = errorMock;
+            global.console.log = logMock;
+        })
+        describe('when the new chain is not longer', () => {
+            it('does not replace the chain', () => {
+               newChain.chain[0] = { new: 'chain'};
+
+               blockchain.replaceChain(newChain.chain);
+
+
+
+               expect(blockchain.chain).toEqual(originalChain);
+            });
+             it('logs an error', () => {
+                expect(errorMock).toHaveBeenCalled();
+             });
+        });
+        describe('when the new chain is longer', () => {
+              beforeEach(() => {
+	            newChain.addBlock({ data: 'Bears' });
+	            newChain.addBlock({ data: 'Beets' });
+                newChain.addBlock({ data: 'Battlestar Galactica' });
+        });
+        describe('and the chain is invalid', () => {
+             it('does not replace the chain', () => {
+               newChain.chain[2].hash = 'some-fake-hash';
+
+               blockchain.replaceChain(newChain.chain);
+               expect(blockchain.chain).toEqual(originalChain);
+          });
+         });
+         describe('and the chain is valid', () => {
+             it('replaces the chain', () => {
+               blockchain.replaceChain(newChain.chain);
+
+               expect(blockchain.chain).toEqual(newChain.chain)
+            });
+           });
+        });
+    });
+
  });
     describe('when the chain starts with the genesis block and has multiple blocks', () => {
 	  beforeEach(() => {
 	  blockchain.addBlock({ data: 'Bears' });
 	  blockchain.addBlock({ data: 'Beets' });
       blockchain.addBlock({ data: 'Battlestar Galactica' });
-})
+});
 	describe('and a lastHash reference has changed', () => {
   	  it('returns false', () => {
 	   blockchain.chain[2].lastHash = 'broken-lashHash';
